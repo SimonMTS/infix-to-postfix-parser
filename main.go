@@ -7,6 +7,18 @@ import (
     "unicode"
 )
 
+//  E -> E O N | N
+//  O -> '+'
+//  N -> 0..9
+//
+//  E -> E O N | N
+//  A -> A ααα | β
+//  ==
+//  A -> βR
+//  R -> αR | ε
+//
+//  E -> N R
+//  R -> O N R | ε
 
 func main() {
     // tokens := lex("  123 +  354 9  *   76")
@@ -64,21 +76,9 @@ func parse(tokens []Lexeme) (root Node) {
     var matchExpr func (*Context)
     matchExpr = func (ctx *Context) {
 
-        // if ctx.lookahead().equals(Lexeme("+")) {
-        //     node := matchOperator(ctx, Lexeme("+"))
-
-        //     oldActive := active
-        //     active = node
-        //     matchExpr(ctx)
-        //     matchExpr(ctx)
-        //     active = oldActive
-        // } else if ctx.lookahead().isNumber() {
-        //     matchNumber(ctx)
-        // }
-
         n := matchNumber(ctx)
 
-        if ctx.index < len(ctx.tokens)-1 {
+        if !ctx.done() {
             op := matchOperator(ctx, Lexeme("+"))
             active.children = append(active.children, op)
             oldActive := active
@@ -109,11 +109,14 @@ func (ctx *Context) lookahead() Lexeme {
     return ctx.tokens[ctx.index]
 }
 func (ctx *Context) advance() {
-    if ctx.index < len(ctx.tokens)-1 {
+    // if ctx.index < len(ctx.tokens)-1 {
         ctx.index += 1
-    } else {
-        fmt.Println("done")
-    }
+    // } else {
+    //     fmt.Println("done")
+    // }
+}
+func (ctx *Context) done() bool {
+    return ctx.index >= len(ctx.tokens)
 }
 type Node struct {
     children []*Node
