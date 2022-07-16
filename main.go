@@ -69,41 +69,63 @@ func parse(tokens []Lexeme) (root Node) {
     }
     // terminal matchers
 
+//  E -> N O E | N
+//  O -> '+'
+//  N -> 0..9
 
     matchE = func (ctx *Context) {
-        n := Node{ make([]*Node, 0), matchNumber(ctx)}
-        // active.children = append(active.children, &n)
 
-        // oldActive := active
-        matchR(ctx, &n)
-        // active = oldActive
-    }
+        if ctx.peek(0).isNumber() &&
+           ctx.peek(1).equals(Lexeme("+")) {
 
-    matchR = func (ctx *Context, left *Node) {
-        if ctx.lookahead().equals(Lexeme("+")) {
+            n := Node{ make([]*Node, 0), matchNumber(ctx)}
             op := Node{ make([]*Node, 0), matchOperator(ctx)}
+
             active.children = append(active.children, &op)
             oldActive := active
             active = &op
-            active.children = append(active.children, left)
-
-            n := Node{ make([]*Node, 0), matchNumber(ctx)}
-            // active.children = append(active.children, &n)
-
-            // return
-            // op.children = append(active.children, leftNum)
-            // op.children = append(active.children, &rightNum)
-
-            // oldActive := active
-            // active = &op
-            matchR(ctx, &n)
+            active.children = append(active.children, &n)
+            matchE(ctx)
             active = oldActive
         } else {
-            // of leeg
-            // n := Node{ make([]*Node, 0), []rune("ε")}
-            active.children = append(active.children, left)
+            n := Node{ make([]*Node, 0), matchNumber(ctx)}
+            active.children = append(active.children, &n)
         }
+
+
+
+        // active.children = append(active.children, &n)
+
+        // oldActive := active
+        // matchR(ctx, &n)
+        // active = oldActive
     }
+
+    // matchR = func (ctx *Context, left *Node) {
+    //     if ctx.lookahead().equals(Lexeme("+")) {
+    //         op := Node{ make([]*Node, 0), matchOperator(ctx)}
+    //         active.children = append(active.children, &op)
+    //         oldActive := active
+    //         active = &op
+    //         active.children = append(active.children, left)
+
+    //         n := Node{ make([]*Node, 0), matchNumber(ctx)}
+    //         // active.children = append(active.children, &n)
+
+    //         // return
+    //         // op.children = append(active.children, leftNum)
+    //         // op.children = append(active.children, &rightNum)
+
+    //         // oldActive := active
+    //         // active = &op
+    //         matchR(ctx, &n)
+    //         active = oldActive
+    //     } else {
+    //         // of leeg
+    //         // n := Node{ make([]*Node, 0), []rune("ε")}
+    //         active.children = append(active.children, left)
+    //     }
+    // }
 
 
 
@@ -121,8 +143,12 @@ type Context struct {
     index int
 }
 func (ctx *Context) lookahead() Lexeme {
-    if ctx.index < len(ctx.tokens) {
-        return ctx.tokens[ctx.index]
+    return ctx.peek(0)
+}
+func (ctx *Context) peek(n int) Lexeme {
+    pos := ctx.index + n
+    if pos < len(ctx.tokens) {
+        return ctx.tokens[pos]
     } else {
         return Lexeme("EOF")
     }
