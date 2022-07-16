@@ -46,7 +46,7 @@ func parse(tokens []Lexeme) (root Node) {
     }
 
     var matchE func (*Context)
-    var matchR func (*Context)
+    var matchR func (*Context, *Node)
 
     // terminal matchers
     matchOperator := func (ctx *Context) Lexeme {
@@ -72,35 +72,36 @@ func parse(tokens []Lexeme) (root Node) {
 
     matchE = func (ctx *Context) {
         n := Node{ make([]*Node, 0), matchNumber(ctx)}
-        active.children = append(active.children, &n)
+        // active.children = append(active.children, &n)
 
-        oldActive := active
-        active = &n
-        matchR(ctx)
-        active = oldActive
+        // oldActive := active
+        matchR(ctx, &n)
+        // active = oldActive
     }
 
-    matchR = func (ctx *Context) {
+    matchR = func (ctx *Context, left *Node) {
         if ctx.lookahead().equals(Lexeme("+")) {
             op := Node{ make([]*Node, 0), matchOperator(ctx)}
             active.children = append(active.children, &op)
+            oldActive := active
+            active = &op
+            active.children = append(active.children, left)
 
             n := Node{ make([]*Node, 0), matchNumber(ctx)}
-            active.children = append(active.children, &n)
-            oldActive := active
-            active = &n
+            // active.children = append(active.children, &n)
 
+            // return
             // op.children = append(active.children, leftNum)
             // op.children = append(active.children, &rightNum)
 
             // oldActive := active
             // active = &op
-            matchR(ctx)
+            matchR(ctx, &n)
             active = oldActive
         } else {
             // of leeg
             // n := Node{ make([]*Node, 0), []rune("ε")}
-            // active.children = append(active.children, &n)
+            active.children = append(active.children, left)
         }
     }
 
