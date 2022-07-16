@@ -18,7 +18,7 @@ func main() {
     ast := parse(tokens)
     // ast.Print(0)
 
-    rpn := emit(&ast)
+    rpn := emit(ast)
     fmt.Println(infix)
     fmt.Println(rpn)
     fmt.Println("34 68 / 23 - 93 24 2 / * + 4 38 + -")
@@ -32,9 +32,7 @@ func emit(n *Node) (rpn string) {
 }
 
 // Parser
-func parse(tokens []Lexeme) (root Node) {
-    root.content = []rune("root")
-    // active := &root
+func parse(tokens []Lexeme) *Node {
     ctx := Context{
         tokens: tokens,
         index: 0,
@@ -42,33 +40,33 @@ func parse(tokens []Lexeme) (root Node) {
 
 
     // terminal matchers
-    matchOperator := func (ctx *Context) Lexeme {
+    matchOperator := func (ctx *Context) *Node {
         l := ctx.lookahead()
         if l.equals(Lexeme("+")) ||
            l.equals(Lexeme("-")) ||
            l.equals(Lexeme("*")) ||
            l.equals(Lexeme("/")) {
             ctx.advance()
-            return l
+            return &Node{ make([]*Node, 0), l}
         } else {
             fmt.Println("error1"); os.Exit(1); return nil
         }
     }
-    matchNumber := func (ctx *Context) Lexeme {
+    matchNumber := func (ctx *Context) *Node {
         l := ctx.lookahead()
         if l.isNumber() {
             ctx.advance()
-            return l
+            return &Node{ make([]*Node, 0), l}
         } else {
             fmt.Println("error2"); os.Exit(1); return nil
         }
     }
-    matchParentheses := func (ctx *Context) Lexeme {
+    matchParentheses := func (ctx *Context) *Node {
         l := ctx.lookahead()
         if l.equals(Lexeme("(")) ||
            l.equals(Lexeme(")")) {
             ctx.advance()
-            return l
+            return &Node{ make([]*Node, 0), l}
         } else {
             fmt.Println("error3 " + string(l)); os.Exit(1); return nil
         }
@@ -81,54 +79,50 @@ func parse(tokens []Lexeme) (root Node) {
     var matchTerm func (*Context) *Node
 
     matchAdditive = func (ctx *Context) *Node {
-        localRoot := matchMultiplicative(ctx)
+        root := matchMultiplicative(ctx)
 
         for ctx.lookahead().equals(Lexeme("+")) ||
             ctx.lookahead().equals(Lexeme("-")) {
-            op := Node{ make([]*Node, 0), matchOperator(ctx)}
-            op.children = append(op.children, localRoot)
+            op := matchOperator(ctx)
+            op.children = append(op.children, root)
 
             n := matchMultiplicative(ctx)
             op.children = append(op.children, n)
-            localRoot = &op
+            root = op
         }
 
-        return localRoot
+        return root
     }
 
     matchMultiplicative = func (ctx *Context) *Node {
-        localRoot := matchTerm(ctx)
+        root := matchTerm(ctx)
 
         for ctx.lookahead().equals(Lexeme("*")) ||
             ctx.lookahead().equals(Lexeme("/")) {
-            op := Node{ make([]*Node, 0), matchOperator(ctx)}
-            op.children = append(op.children, localRoot)
+            op := matchOperator(ctx)
+            op.children = append(op.children, root)
 
             n := matchTerm(ctx)
             op.children = append(op.children, n)
-            localRoot = &op
+            root = op
         }
 
-        return localRoot
+        return root
     }
 
-    matchTerm = func (ctx *Context) *Node {
+    matchTerm = func (ctx *Context) (n *Node) {
         if ctx.lookahead().isNumber() {
-            localRoot := &Node{ make([]*Node, 0), matchNumber(ctx)}
-            return localRoot
-        }
-        if ctx.lookahead().equals(Lexeme("(")) {
+            n = matchNumber(ctx)
+        } else if ctx.lookahead().equals(Lexeme("(")) {
             matchParentheses(ctx)
-            localRoot := matchAdditive(ctx)
+            n = matchAdditive(ctx)
             matchParentheses(ctx)
-            return localRoot
         }
-        return nil
+
+        return
     }
 
-    root = *matchAdditive(&ctx)
-
-    return
+    return matchAdditive(&ctx)
 }
 type Context struct {
     tokens []Lexeme
@@ -156,7 +150,7 @@ func (n *Node) Print(depth int) {
 }
 
 
-// Lexer: seems overly complex
+// Lexer
 func lex(source string) (tokens []Lexeme) {
     src := []rune(source)
 
