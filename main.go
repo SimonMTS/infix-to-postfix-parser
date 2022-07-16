@@ -17,12 +17,15 @@ import (
 //  A -> βR
 //  R -> αR | ε
 //
+//
 //  E -> N R
 //  R -> O N R | ε
+//  O -> '+'
+//  N -> 0..9
 
 func main() {
     // tokens := lex("  123 +  354 9  *   76")
-    tokens := lex("34 + 56 + 9")
+    tokens := lex("3 + 5")
 
     for _, t := range tokens {
         fmt.Println("t: " + string(t))
@@ -35,70 +38,75 @@ func main() {
 
 // Parser
 func parse(tokens []Lexeme) (root Node) {
-    root.content = "root"
+    root.content = []rune("root")
     active := &root
     ctx := Context{
         tokens: tokens,
         index: 0,
     }
 
-    matchOperator := func (ctx *Context, terminal Lexeme) *Node {
-        if ctx.lookahead().equals(terminal) {
-            node := Node{ make([]*Node, 0), string(ctx.lookahead())}
-            // active.children = append(active.children, &node)
+    var matchE func (*Context)
+    var matchR func (*Context)
+
+    // terminal matchers
+    matchOperator := func (ctx *Context) Lexeme {
+        l := ctx.lookahead()
+        if l.equals(Lexeme("+")) {
             ctx.advance()
-            return &node
+            return l
         } else {
-            fmt.Println("syntax error1 | expected " +
-            string(terminal) + " but found " +
-            string(ctx.lookahead())); os.Exit(1)
-            return nil
+            fmt.Println("error1"); os.Exit(1); return nil
         }
     }
-
-
-    var matchNumber func(ctx *Context) *Node
-    matchNumber = func (ctx *Context) *Node {
-        // is lookahead a number
-        for _, r := range ctx.lookahead() {
-            if !unicode.IsDigit(r) {
-                fmt.Println("syntax error2"); os.Exit(1)
-            }
-        }
-
-        node := Node{ make([]*Node, 0), string(ctx.lookahead())}
-        // active.children = append(active.children, &node)
-        ctx.advance()
-
-        return &node
-    }
-
-    var matchExpr func (*Context)
-    matchExpr = func (ctx *Context) {
-
-        n := matchNumber(ctx)
-
-        if !ctx.done() {
-            op := matchOperator(ctx, Lexeme("+"))
-            active.children = append(active.children, op)
-            oldActive := active
-            active = op
-            active.children = append(active.children, n)
-            matchExpr(ctx)
-            active = oldActive
+    matchNumber := func (ctx *Context) Lexeme {
+        l := ctx.lookahead()
+        if l.isNumber() {
+            ctx.advance()
+            return l
         } else {
-            active.children = append(active.children, n)
+            fmt.Println("error2"); os.Exit(1); return nil
         }
+    }
+    // terminal matchers
 
+
+    matchE = func (ctx *Context) {
+        // n := Node{ make([]*Node, 0), matchNumber(ctx)}
+        matchNumber(ctx)
+
+        matchR(ctx)
+    }
+
+    matchR = func (ctx *Context) {
+        if ctx.lookahead().equals(Lexeme("+")) {
+            op := Node{ make([]*Node, 0), matchOperator(ctx)}
+            // rightNum := Node{ make([]*Node, 0), matchNumber(ctx)}
+            matchNumber(ctx)
+
+            // op.children = append(active.children, leftNum)
+            // op.children = append(active.children, &rightNum)
+            active.children = append(active.children, &op)
+
+            // oldActive := active
+            // active = &op
+            matchR(ctx)
+            // active = oldActive
+        } else {
+            // of leeg
+            // n := Node{ make([]*Node, 0), []rune("ε")}
+            // active.children = append(active.children, &n)
+        }
     }
 
 
-    _ = matchOperator
-    _ = matchNumber
-    _ = matchExpr
 
-    matchExpr(&ctx)
 
+    matchE(&ctx)
+
+    _ = matchE
+    _ = matchR
+    _ = active
+    _ = ctx
     return
 }
 type Context struct {
@@ -106,7 +114,11 @@ type Context struct {
     index int
 }
 func (ctx *Context) lookahead() Lexeme {
-    return ctx.tokens[ctx.index]
+    if ctx.index < len(ctx.tokens) {
+        return ctx.tokens[ctx.index]
+    } else {
+        return Lexeme("EOF")
+    }
 }
 func (ctx *Context) advance() {
     // if ctx.index < len(ctx.tokens)-1 {
@@ -120,10 +132,10 @@ func (ctx *Context) done() bool {
 }
 type Node struct {
     children []*Node
-    content  string
+    content  []rune
 }
 func (n *Node) Print(depth int) {
-    fmt.Println(strings.Repeat(" ", depth*4) + "n:",  n.content)
+    fmt.Println(strings.Repeat(" ", depth*4) + "n:",  string(n.content))
     for _, c := range n.children {
         c.Print(depth+1)
     }
