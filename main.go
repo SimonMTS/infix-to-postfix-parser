@@ -8,7 +8,8 @@ import (
 )
 
 func main() {
-    infix := "345 + 567 + 789 - 2000"
+    infix := "345 + 567 * 789 - 2000"
+    // 567 789 * 345 + 2000 -
 
     tokens := lex(infix)
     // for _, t := range tokens {
@@ -25,6 +26,7 @@ func main() {
 
 // RPN emitter
 func emit(n *Node) (rpn string) {
+    if n == nil { return "" }
     if len(n.children) >= 1 { rpn += emit(n.children[0]) }
     if len(n.children) >= 2 { rpn += emit(n.children[1]) }
     return rpn + string(n.content) + " "
@@ -44,7 +46,9 @@ func parse(tokens []Lexeme) (root Node) {
     matchOperator := func (ctx *Context) Lexeme {
         l := ctx.lookahead()
         if l.equals(Lexeme("+")) ||
-           l.equals(Lexeme("-")) {
+           l.equals(Lexeme("-")) ||
+           l.equals(Lexeme("*")) ||
+           l.equals(Lexeme("/")) {
             ctx.advance()
             return l
         } else {
@@ -62,9 +66,28 @@ func parse(tokens []Lexeme) (root Node) {
     }
     // terminal matchers
 
+    matchMultiplicative := func (ctx *Context, n *Node) (localRoot *Node) {
+        // localRoot := &Node{ make([]*Node, 0), matchNumber(ctx)}
+        localRoot = n
 
-    matchAdditive := func (ctx *Context) {
-        localRoot := &Node{ make([]*Node, 0), matchNumber(ctx)}
+        for ctx.lookahead().equals(Lexeme("*")) ||
+            ctx.lookahead().equals(Lexeme("/")) {
+            op1 := Node{ make([]*Node, 0), matchOperator(ctx)}
+            n2 := Node{ make([]*Node, 0), matchNumber(ctx)}
+
+            op1.children = append(op1.children, localRoot)
+            op1.children = append(op1.children, &n2)
+            localRoot = &op1
+        }
+
+        // active.children = append(active.children, localRoot)
+        return
+    }
+    _ = matchMultiplicative
+
+    matchAdditive := func (ctx *Context, n *Node) (localRoot *Node) {
+        // localRoot := &Node{ make([]*Node, 0), matchNumber(ctx)}
+        localRoot = n
 
         for ctx.lookahead().equals(Lexeme("+")) ||
             ctx.lookahead().equals(Lexeme("-")) {
@@ -76,10 +99,30 @@ func parse(tokens []Lexeme) (root Node) {
             localRoot = &op1
         }
 
-        active.children = append(active.children, localRoot)
+        // active.children = append(active.children, localRoot)
+        return
     }
 
-    matchAdditive(&ctx)
+    matchExpr := func (ctx *Context) {
+        localRoot := &Node{ make([]*Node, 0), matchNumber(ctx)}
+
+        if ctx.lookahead().equals(Lexeme("+")) ||
+           ctx.lookahead().equals(Lexeme("-")) {
+               localRoot = matchAdditive(ctx, localRoot)
+        }
+        // active.children = append(active.children, localRoot)
+
+        if ctx.lookahead().equals(Lexeme("*")) ||
+           ctx.lookahead().equals(Lexeme("/")) {
+               localRoot = matchMultiplicative(ctx, localRoot)
+        }
+
+        active.children = append(active.children, localRoot)
+    }
+    _ = matchExpr
+
+    // matchAdditive(&ctx)
+    matchExpr(&ctx)
 
     return
 }
