@@ -10,7 +10,7 @@ import (
 
 func main() {
     // tokens := lex("  123 +  354 9  *   76")
-    tokens := lex("+ 34 + 56 8")
+    tokens := lex("34 + 56 + 9")
 
     for _, t := range tokens {
         fmt.Println("t: " + string(t))
@@ -33,18 +33,20 @@ func parse(tokens []Lexeme) (root Node) {
     matchOperator := func (ctx *Context, terminal Lexeme) *Node {
         if ctx.lookahead().equals(terminal) {
             node := Node{ make([]*Node, 0), string(ctx.lookahead())}
-            active.children = append(active.children, &node)
+            // active.children = append(active.children, &node)
             ctx.advance()
             return &node
         } else {
-            fmt.Println("syntax error1"); os.Exit(1)
+            fmt.Println("syntax error1 | expected " +
+            string(terminal) + " but found " +
+            string(ctx.lookahead())); os.Exit(1)
             return nil
         }
     }
 
 
-    var matchNumber func(ctx *Context)
-    matchNumber = func (ctx *Context) {
+    var matchNumber func(ctx *Context) *Node
+    matchNumber = func (ctx *Context) *Node {
         // is lookahead a number
         for _, r := range ctx.lookahead() {
             if !unicode.IsDigit(r) {
@@ -53,36 +55,42 @@ func parse(tokens []Lexeme) (root Node) {
         }
 
         node := Node{ make([]*Node, 0), string(ctx.lookahead())}
-        active.children = append(active.children, &node)
+        // active.children = append(active.children, &node)
         ctx.advance()
+
+        return &node
     }
 
     var matchExpr func (*Context)
     matchExpr = func (ctx *Context) {
 
-        if ctx.lookahead().equals(Lexeme("+")) {
-            node := matchOperator(ctx, Lexeme("+"))
+        // if ctx.lookahead().equals(Lexeme("+")) {
+        //     node := matchOperator(ctx, Lexeme("+"))
 
+        //     oldActive := active
+        //     active = node
+        //     matchExpr(ctx)
+        //     matchExpr(ctx)
+        //     active = oldActive
+        // } else if ctx.lookahead().isNumber() {
+        //     matchNumber(ctx)
+        // }
+
+        n := matchNumber(ctx)
+
+        if ctx.index < len(ctx.tokens)-1 {
+            op := matchOperator(ctx, Lexeme("+"))
+            active.children = append(active.children, op)
             oldActive := active
-            active = node
-            matchExpr(ctx)
+            active = op
+            active.children = append(active.children, n)
             matchExpr(ctx)
             active = oldActive
-        } else if ctx.lookahead().isNumber() {
-            matchNumber(ctx)
-            // node := Node{ make([]*Node, 0), string(ctx.lookahead())}
-            // active.children = append(active.children, &node)
-            // ctx.advance()
+        } else {
+            active.children = append(active.children, n)
         }
 
-
-
-        // matchOperator(ctx, Lexeme("+"))
-
-        // ctx.advance()
     }
-
-
 
 
     _ = matchOperator
