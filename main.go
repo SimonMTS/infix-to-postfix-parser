@@ -25,7 +25,7 @@ import (
 
 func main() {
     // tokens := lex("  123 +  354 9  *   76")
-    tokens := lex("3 + 5")
+    tokens := lex("3 + 5 + 9")
 
     for _, t := range tokens {
         fmt.Println("t: " + string(t))
@@ -71,26 +71,32 @@ func parse(tokens []Lexeme) (root Node) {
 
 
     matchE = func (ctx *Context) {
-        // n := Node{ make([]*Node, 0), matchNumber(ctx)}
-        matchNumber(ctx)
+        n := Node{ make([]*Node, 0), matchNumber(ctx)}
+        active.children = append(active.children, &n)
 
+        oldActive := active
+        active = &n
         matchR(ctx)
+        active = oldActive
     }
 
     matchR = func (ctx *Context) {
         if ctx.lookahead().equals(Lexeme("+")) {
             op := Node{ make([]*Node, 0), matchOperator(ctx)}
-            // rightNum := Node{ make([]*Node, 0), matchNumber(ctx)}
-            matchNumber(ctx)
+            active.children = append(active.children, &op)
+
+            n := Node{ make([]*Node, 0), matchNumber(ctx)}
+            active.children = append(active.children, &n)
+            oldActive := active
+            active = &n
 
             // op.children = append(active.children, leftNum)
             // op.children = append(active.children, &rightNum)
-            active.children = append(active.children, &op)
 
             // oldActive := active
             // active = &op
             matchR(ctx)
-            // active = oldActive
+            active = oldActive
         } else {
             // of leeg
             // n := Node{ make([]*Node, 0), []rune("ε")}
