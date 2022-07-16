@@ -25,15 +25,32 @@ import (
 
 func main() {
     // tokens := lex("  123 +  354 9  *   76")
-    tokens := lex("3 + 5 + 9 - 7")
+    tokens := lex("345 + 567 + 789 - 2000")
 
-    for _, t := range tokens {
-        fmt.Println("t: " + string(t))
-    }
+    // for _, t := range tokens {
+    //     fmt.Println("t: " + string(t))
+    // }
 
     ast := parse(tokens)
 
-    ast.Print(0)
+    // ast.Print(0)
+
+    rpn := emit(ast.children[0])
+    fmt.Println(rpn)
+}
+
+// RPN emitter
+func emit(n *Node) (rpn string) {
+    if len(n.children) >= 1 {
+        rpn += emit(n.children[0])
+    }
+
+    if len(n.children) >= 2 {
+        rpn += emit(n.children[1])
+    }
+
+    rpn += string(n.content) + " "
+    return
 }
 
 // Parser
