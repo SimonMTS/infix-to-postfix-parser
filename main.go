@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-    infix := "34 / 68 - 23 + 93 * ( 24 / 2 ) - ( 4 + 38 )"
+    infix := "  34 / 68 - 23 + 93 * ( 24   / 2  )-(4+ 38)    "
 
     tokens := lex(infix)
     // for _, t := range tokens {
@@ -163,13 +163,14 @@ func lex(source string) (tokens []Lexeme) {
     var lexeme Lexeme
     for i := 0; i < len(src); i++ {
         if src[i] == ' ' {
-            lexeme = nil
             continue
         }
 
         lexeme = append(lexeme, src[i])
 
-        if i == len(src)-1 || !unicode.IsDigit(src[i+1]) {
+        if i+1 == len(src) ||
+           !unicode.IsDigit(src[i]) ||
+           !unicode.IsDigit(src[i+1]) {
             tokens = append(tokens, lexeme)
             lexeme = nil
         }
