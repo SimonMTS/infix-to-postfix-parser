@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-    infix := "345 + 567 * 789 - 2000"
+    infix := "34 / 68 - 23 + 93 * ( 24 / 2 ) - ( 4 + 38 )"
 
     tokens := lex(infix)
     // for _, t := range tokens {
@@ -21,6 +21,7 @@ func main() {
     rpn := emit(&ast)
     fmt.Println(infix)
     fmt.Println(rpn)
+    fmt.Println("34 68 / 23 - 93 24 2 / * + 4 38 + -")
 }
 
 // RPN emitter
@@ -62,14 +63,25 @@ func parse(tokens []Lexeme) (root Node) {
             fmt.Println("error2"); os.Exit(1); return nil
         }
     }
+    matchParentheses := func (ctx *Context) Lexeme {
+        l := ctx.lookahead()
+        if l.equals(Lexeme("(")) ||
+           l.equals(Lexeme(")")) {
+            ctx.advance()
+            return l
+        } else {
+            fmt.Println("error3 " + string(l)); os.Exit(1); return nil
+        }
+    }
     // terminal matchers
 
 
     var matchAdditive func (*Context) *Node
     var matchMultiplicative func (*Context) *Node
+    var matchTerm func (*Context) *Node
 
     matchAdditive = func (ctx *Context) *Node {
-        localRoot := &Node{ make([]*Node, 0), matchNumber(ctx)}
+        localRoot := matchMultiplicative(ctx)
 
         for ctx.lookahead().equals(Lexeme("+")) ||
             ctx.lookahead().equals(Lexeme("-")) {
@@ -83,20 +95,35 @@ func parse(tokens []Lexeme) (root Node) {
 
         return localRoot
     }
+
     matchMultiplicative = func (ctx *Context) *Node {
-        localRoot := &Node{ make([]*Node, 0), matchNumber(ctx)}
+        localRoot := matchTerm(ctx)
 
         for ctx.lookahead().equals(Lexeme("*")) ||
             ctx.lookahead().equals(Lexeme("/")) {
             op := Node{ make([]*Node, 0), matchOperator(ctx)}
             op.children = append(op.children, localRoot)
 
-            n := &Node{ make([]*Node, 0), matchNumber(ctx)}
+            n := matchTerm(ctx)
             op.children = append(op.children, n)
             localRoot = &op
         }
 
         return localRoot
+    }
+
+    matchTerm = func (ctx *Context) *Node {
+        if ctx.lookahead().isNumber() {
+            localRoot := &Node{ make([]*Node, 0), matchNumber(ctx)}
+            return localRoot
+        }
+        if ctx.lookahead().equals(Lexeme("(")) {
+            matchParentheses(ctx)
+            localRoot := matchAdditive(ctx)
+            matchParentheses(ctx)
+            return localRoot
+        }
+        return nil
     }
 
     root = *matchAdditive(&ctx)
