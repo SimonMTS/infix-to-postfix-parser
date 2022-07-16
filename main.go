@@ -7,50 +7,27 @@ import (
     "unicode"
 )
 
-//  E -> E O N | N
-//  O -> '+'
-//  N -> 0..9
-//
-//  E -> E O N | N
-//  A -> A ααα | β
-//  ==
-//  A -> βR
-//  R -> αR | ε
-//
-//
-//  E -> N R
-//  R -> O N R | ε
-//  O -> '+'
-//  N -> 0..9
-
 func main() {
-    // tokens := lex("  123 +  354 9  *   76")
-    tokens := lex("345 + 567 + 789 - 2000")
+    infix := "345 + 567 + 789 - 2000"
 
+    tokens := lex(infix)
     // for _, t := range tokens {
     //     fmt.Println("t: " + string(t))
     // }
 
     ast := parse(tokens)
-
     // ast.Print(0)
 
     rpn := emit(ast.children[0])
+    fmt.Println(infix)
     fmt.Println(rpn)
 }
 
 // RPN emitter
 func emit(n *Node) (rpn string) {
-    if len(n.children) >= 1 {
-        rpn += emit(n.children[0])
-    }
-
-    if len(n.children) >= 2 {
-        rpn += emit(n.children[1])
-    }
-
-    rpn += string(n.content) + " "
-    return
+    if len(n.children) >= 1 { rpn += emit(n.children[0]) }
+    if len(n.children) >= 2 { rpn += emit(n.children[1]) }
+    return rpn + string(n.content) + " "
 }
 
 // Parser
@@ -62,7 +39,6 @@ func parse(tokens []Lexeme) (root Node) {
         index: 0,
     }
 
-    var matchE func (*Context)
 
     // terminal matchers
     matchOperator := func (ctx *Context) Lexeme {
@@ -87,7 +63,7 @@ func parse(tokens []Lexeme) (root Node) {
     // terminal matchers
 
 
-    matchE = func (ctx *Context) {
+    matchAdditive := func (ctx *Context) {
         localRoot := &Node{ make([]*Node, 0), matchNumber(ctx)}
 
         for ctx.lookahead().equals(Lexeme("+")) ||
@@ -103,7 +79,7 @@ func parse(tokens []Lexeme) (root Node) {
         active.children = append(active.children, localRoot)
     }
 
-    matchE(&ctx)
+    matchAdditive(&ctx)
 
     return
 }
