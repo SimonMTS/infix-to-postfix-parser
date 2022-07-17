@@ -15,8 +15,8 @@ func lex(source string) (tokens []Lexeme) {
         lexeme = append(lexeme, src[i])
 
         if i+1 == len(src) ||
-           !unicode.IsDigit(src[i]) ||
-           !unicode.IsDigit(src[i+1]) {
+            !unicode.IsDigit(src[i]) ||
+            !unicode.IsDigit(src[i+1]) {
             tokens = append(tokens, lexeme)
             lexeme = nil
         }

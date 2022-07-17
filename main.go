@@ -12,13 +12,15 @@ func main() {
     //     fmt.Println("t: " + string(t))
     // }
 
+    // Predictive recursiveDescent parser, at least that's
+    // what I tried to do
     ast := parse(tokens)
     // ast.Print(0)
 
     rpn := emit(ast)
+
     fmt.Println(infix)
     fmt.Println(rpn)
-    fmt.Println("34 68 / 23 - 93 24 2 / * + 4 38 + -")
 }
 
 // RPN emitter
@@ -27,4 +29,3 @@ func emit(n *Node) (rpn string) {
     if len(n.children) >= 2 { rpn += emit(n.children[1]) }
     return rpn + string(n.content) + " "
 }
-
