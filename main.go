@@ -6,6 +6,7 @@ import (
 
 func main() {
     infix := "  34 / 68 - 23 + 93 * ( 24   / 2  )-(4+ 38)    "
+    expectedPostfix := "34 68 / 23 - 93 24 2 / * + 4 38 + -"
 
     tokens := lex(infix)
     // for _, t := range tokens {
@@ -21,6 +22,7 @@ func main() {
 
     fmt.Println(infix)
     fmt.Println(rpn)
+    fmt.Println(expectedPostfix)
 }
 
 // RPN emitter

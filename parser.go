@@ -3,9 +3,12 @@ package main
 import (
     "fmt"
     "os"
+    r "reflect"
+    "strconv"
     "strings"
 )
 
+// TODO this is a massive function
 // Parser
 func parse(tokens []Lexeme) *Node {
     ctx := Context{
@@ -13,13 +16,18 @@ func parse(tokens []Lexeme) *Node {
         index:  0,
     }
 
+    isNum := func(l Lexeme) bool {
+        _, err := strconv.ParseInt(string(l),10,64);
+        return err == nil
+    }
+
     // terminal matchers
     matchOperator := func(ctx *Context) *Node {
         l := ctx.lookahead()
-        if l.equals(Lexeme("+")) ||
-            l.equals(Lexeme("-")) ||
-            l.equals(Lexeme("*")) ||
-            l.equals(Lexeme("/")) {
+        if r.DeepEqual(l, Lexeme("+")) ||
+            r.DeepEqual(l, Lexeme("-")) ||
+            r.DeepEqual(l, Lexeme("*")) ||
+            r.DeepEqual(l, Lexeme("/")) {
             ctx.advance()
             return &Node{make([]*Node, 0), l}
         } else {
@@ -30,7 +38,7 @@ func parse(tokens []Lexeme) *Node {
     }
     matchNumber := func(ctx *Context) *Node {
         l := ctx.lookahead()
-        if l.isNumber() {
+        if isNum(l) {
             ctx.advance()
             return &Node{make([]*Node, 0), l}
         } else {
@@ -41,8 +49,8 @@ func parse(tokens []Lexeme) *Node {
     }
     matchParentheses := func(ctx *Context) *Node {
         l := ctx.lookahead()
-        if l.equals(Lexeme("(")) ||
-            l.equals(Lexeme(")")) {
+        if r.DeepEqual(l, Lexeme("(")) ||
+            r.DeepEqual(l, Lexeme(")")) {
             ctx.advance()
             return &Node{make([]*Node, 0), l}
         } else {
@@ -60,8 +68,8 @@ func parse(tokens []Lexeme) *Node {
     matchAdditive = func(ctx *Context) *Node {
         root := matchMultiplicative(ctx)
 
-        for ctx.lookahead().equals(Lexeme("+")) ||
-            ctx.lookahead().equals(Lexeme("-")) {
+        for r.DeepEqual(ctx.lookahead(), Lexeme("+")) ||
+            r.DeepEqual(ctx.lookahead(), Lexeme("-")) {
             op := matchOperator(ctx)
             op.children = append(op.children, root)
 
@@ -76,8 +84,8 @@ func parse(tokens []Lexeme) *Node {
     matchMultiplicative = func(ctx *Context) *Node {
         root := matchTerm(ctx)
 
-        for ctx.lookahead().equals(Lexeme("*")) ||
-            ctx.lookahead().equals(Lexeme("/")) {
+        for r.DeepEqual(ctx.lookahead(), Lexeme("*")) ||
+            r.DeepEqual(ctx.lookahead(), Lexeme("/")) {
             op := matchOperator(ctx)
             op.children = append(op.children, root)
 
@@ -90,9 +98,9 @@ func parse(tokens []Lexeme) *Node {
     }
 
     matchTerm = func(ctx *Context) (n *Node) {
-        if ctx.lookahead().isNumber() {
+        if isNum(ctx.lookahead()) {
             n = matchNumber(ctx)
-        } else if ctx.lookahead().equals(Lexeme("(")) {
+        } else if r.DeepEqual(ctx.lookahead(), Lexeme("(")) {
             matchParentheses(ctx)
             n = matchAdditive(ctx)
             matchParentheses(ctx)
