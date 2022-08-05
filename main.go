@@ -15,6 +15,11 @@ func main() {
 	ast := parse(tokens)
 	rpn := emit(ast)
 
+	for _, t := range tokens {
+		fmt.Println("t: " + string(t))
+	}
+	ast.Print(0)
+
 	fmt.Printf("%s\n%s\n%s\n", infix, rpn, expectedPostfix)
 }
 
